@@ -228,6 +228,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         title: localized("Encaje Settings", "Ajustes de Encaje"),
         size: NSSize(width: 880, height: 660),
         view: view)
+      settingsWindow?.styleMask.insert(.fullSizeContentView)
+      settingsWindow?.titleVisibility = .hidden
+      settingsWindow?.titlebarAppearsTransparent = true
+      settingsWindow?.titlebarSeparatorStyle = .none
       settingsWindow?.identifier = NSUserInterfaceItemIdentifier("encaje.settings")
     }
     present(settingsWindow)

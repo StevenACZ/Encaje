@@ -23,3 +23,4 @@ Public macOS window manager. Swift 6, SwiftPM, macOS 14+, Apple Silicon.
 - AX success is not frame acceptance: verify actual geometry, including same-display resize clipping.
 - Readiness text must use the full model.ready state, not permission alone.
 - Cross-display acceptance must cover a full round trip between unequal screen sizes; verify the realized frame after settling.
+- Custom button backgrounds, padding and contentShape must live inside the label; verify physical clicks in empty painted edges, not only AX activation.
