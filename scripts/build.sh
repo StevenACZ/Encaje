@@ -30,6 +30,9 @@ bin_dir="$(swift build -c release --arch arm64 --show-bin-path)"
 cp "$bin_dir/Encaje" "$bundle/Contents/MacOS/Encaje"
 cp Assets/Info.plist "$bundle/Contents/Info.plist"
 cp Assets/AppIcon.icns "$bundle/Contents/Resources/EncajeIcon.icns"
+mkdir -p "$bundle/Contents/Resources/Licenses"
+cp LICENSE "$bundle/Contents/Resources/Licenses/Encaje.txt"
+cp docs/licenses/Sparkle.txt docs/licenses/MacGauge.txt "$bundle/Contents/Resources/Licenses/"
 plist="$bundle/Contents/Info.plist"
 if [[ -n "${APP_VERSION:-}" ]]; then
     [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 64

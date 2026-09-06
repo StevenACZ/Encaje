@@ -16,6 +16,9 @@ trap cleanup EXIT
 verify_app() {
     local app="$1" details plist version build
     plist="$app/Contents/Info.plist"
+    for license in Encaje Sparkle MacGauge; do
+        [[ -s "$app/Contents/Resources/Licenses/$license.txt" ]]
+    done
     codesign --verify --deep --strict "$app"
     details="$(codesign -dvv "$app" 2>&1)"
     grep -q '^Authority=Developer ID Application:' <<< "$details"
