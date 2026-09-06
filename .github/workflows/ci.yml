@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Swift formatting
+        run: swift format lint --strict -r Sources Tests Package.swift
+      - name: Tests
+        run: swift test
+      - name: Release compilation
+        run: swift build -c release --product Encaje
+      - name: Public source hygiene
+        run: python3 scripts/check-public-source.py
+      - name: Scan for secrets
+        run: |
+          brew install gitleaks
+          gitleaks git --redact --no-banner .

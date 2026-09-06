@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>es</string>
+	</array>
+	<key>CFBundleDisplayName</key>
+	<string>Encaje</string>
+	<key>CFBundleExecutable</key>
+	<string>Encaje</string>
+	<key>CFBundleIconFile</key>
+	<string>EncajeIcon.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.stevenacz.Encaje</string>
+	<key>CFBundleName</key>
+	<string>Encaje</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>10</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/StevenACZ/Encaje/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>EjJwYzuWlNuccLSqIcVxHRlGMLg7R6ONwpUjnVbFqY8=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUSendProfileInfo</key>
+	<false/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>EncajeDevelopmentBuild</key>
+	<true/>
+</dict>
+</plist>

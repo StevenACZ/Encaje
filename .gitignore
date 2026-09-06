@@ -1,0 +1,14 @@
+.build/
+.swiftpm/
+build/
+.DS_Store
+._*
+.env
+.env.*
+*.p12
+*.pfx
+*.key
+*.pem
+*.dmg
+*.zip
+__pycache__/
