@@ -46,6 +46,10 @@ retries when the observed size proves that correction is needed.
 - Open/close the menu panel by icon, outside click and Escape; Configuration/About
   must retain focus, and closed views must release monitors/rendering work.
 - Check the app icon in both its UI and the system's representation.
+- Click empty painted edges of pause/resume and padded buttons; verify the action,
+  not only Accessibility activation. Confirm the language picker aligns with switches.
+- Open Settings and Welcome in both languages; confirm integrated traffic lights,
+  no visible titlebar text or separator, unclipped content and native close behavior.
 - After closing the UI and settling for at least one minute, sample process CPU
   and memory over multiple intervals. Report bundle size separately from ignored
   development caches and rollback artifacts.
