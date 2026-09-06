@@ -228,10 +228,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         title: localized("Encaje Settings", "Ajustes de Encaje"),
         size: NSSize(width: 880, height: 660),
         view: view)
-      settingsWindow?.styleMask.insert(.fullSizeContentView)
-      settingsWindow?.titleVisibility = .hidden
-      settingsWindow?.titlebarAppearsTransparent = true
-      settingsWindow?.titlebarSeparatorStyle = .none
       settingsWindow?.identifier = NSUserInterfaceItemIdentifier("encaje.settings")
     }
     present(settingsWindow)
@@ -260,8 +256,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   private func makeWindow<V: View>(title: String, size: NSSize, view: V) -> NSWindow {
     let window = NSWindow(
       contentRect: NSRect(origin: .zero, size: size),
-      styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+      styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView], backing: .buffered,
+      defer: false)
     window.title = title
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
+    window.titlebarSeparatorStyle = .none
     window.isReleasedWhenClosed = false
     let hosting = NSHostingView(rootView: view)
     hosting.sizingOptions = []
