@@ -23,7 +23,7 @@ struct ZoneSettingsView: View {
           Button {
             selectedID = model.addRule()
           } label: {
-            Image(systemName: "plus")
+            Image(systemName: "plus").frame(width: 24, height: 24).contentShape(Rectangle())
           }
           .buttonStyle(.borderless).help(localized("Add a zone", "Añadir una zona"))
         }.padding(14)
@@ -37,8 +37,12 @@ struct ZoneSettingsView: View {
           }.padding(.horizontal, 6)
         }
         Divider()
-        Button(localized("Restore defaults", "Restaurar originales")) { confirmReset = true }
-          .font(.caption).buttonStyle(.borderless).padding(12)
+        Button {
+          confirmReset = true
+        } label: {
+          Text(localized("Restore defaults", "Restaurar originales"))
+            .frame(maxWidth: .infinity).padding(12).contentShape(Rectangle())
+        }.font(.caption).buttonStyle(.borderless)
       }.frame(width: 202)
       Divider()
       if let rule = selectedRule {

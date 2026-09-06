@@ -159,8 +159,11 @@ private struct MenuBarPopoverView: View {
           systemImage: model.paused ? "play.fill" : "pause.fill"
         )
         .font(.system(size: 14, weight: .semibold)).frame(maxWidth: .infinity).padding(
-          .vertical, 11)
-      }.buttonStyle(.plain).background(.teal.gradient, in: RoundedRectangle(cornerRadius: 10))
+          .vertical, 11
+        )
+        .background(.teal.gradient, in: RoundedRectangle(cornerRadius: 10))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+      }.buttonStyle(.plain)
         .foregroundStyle(.white)
       if updates.available, updates.phase != .idle {
         UpdateActionView()
@@ -178,7 +181,9 @@ private struct MenuBarPopoverView: View {
               Rectangle())
         }.buttonStyle(.plain).foregroundStyle(.red)
       }.font(.system(size: 13, weight: .medium))
-    }.padding(18).frame(width: 300).fixedSize(horizontal: false, vertical: true).tint(.teal)
+    }.padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 8).frame(width: 300).fixedSize(
+      horizontal: false, vertical: true
+    ).tint(.teal)
   }
 
   private func row(_ text: String, symbol: String, action: @escaping () -> Void) -> some View {

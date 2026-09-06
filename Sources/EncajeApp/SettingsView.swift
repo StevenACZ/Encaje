@@ -19,7 +19,7 @@ struct SettingsView: View {
             Text(sectionSubtitle).font(.callout).foregroundStyle(.secondary)
           }
           Spacer()
-        }.padding(22)
+        }.padding(22).padding(.top, 12)
         Divider()
         Group {
           switch section {
@@ -37,13 +37,13 @@ struct SettingsView: View {
             Button {
               model.message = nil
             } label: {
-              Image(systemName: "xmark")
+              Image(systemName: "xmark").frame(width: 24, height: 24).contentShape(Rectangle())
             }
             .buttonStyle(.plain).accessibilityLabel(localized("Dismiss", "Cerrar"))
           }.padding(12).background(.quaternary.opacity(0.5))
         }
       }
-    }.frame(width: 880, height: 660).tint(.teal)
+    }.frame(width: 880, height: 660).ignoresSafeArea(.container, edges: .top).tint(.teal)
   }
 
   private var sidebar: some View {
@@ -72,7 +72,7 @@ struct SettingsView: View {
           : model.ready ? localized("Ready", "Listo") : localized("Setup needed", "Falta acceso"),
         systemImage: model.ready && !model.paused ? "checkmark.circle.fill" : "circle"
       ).font(.caption).foregroundStyle(model.ready && !model.paused ? .teal : .secondary)
-    }.padding(16).frame(width: 152).frame(maxHeight: .infinity)
+    }.padding(16).padding(.top, 28).frame(width: 152).frame(maxHeight: .infinity)
       .background(.quaternary.opacity(0.22))
   }
 

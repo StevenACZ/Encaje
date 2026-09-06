@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-06
+
+### Changed
+
+- Simplified Settings and Welcome windows with integrated native window controls.
+- Reduced unused space at the bottom of the menu bar panel.
+
+### Fixed
+
+- Made the entire painted pause/resume button clickable, including its empty edges.
+- Expanded add, dismiss and restore-defaults button targets.
+- Aligned the language selector with the switches in Preferences.
+
 ## [1.0.0] - 2026-09-06
 
 First public release.

@@ -256,8 +256,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   private func makeWindow<V: View>(title: String, size: NSSize, view: V) -> NSWindow {
     let window = NSWindow(
       contentRect: NSRect(origin: .zero, size: size),
-      styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+      styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView], backing: .buffered,
+      defer: false)
     window.title = title
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
+    window.titlebarSeparatorStyle = .none
     window.isReleasedWhenClosed = false
     let hosting = NSHostingView(rootView: view)
     hosting.sizingOptions = []

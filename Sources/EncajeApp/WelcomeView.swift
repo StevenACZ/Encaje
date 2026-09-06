@@ -102,12 +102,14 @@ struct WelcomeView: View {
         Button(localized("Set up later", "Configurar después"), action: finish).buttonStyle(.plain)
           .foregroundStyle(.secondary).font(.caption)
       }
-    }.padding(32).frame(width: 510, height: 590).tint(.teal)
-      .animation(
-        reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.85),
-        value: permissions.granted
-      )
-      .onAppear { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) { entrance = true } }
+    }.padding(32).frame(width: 510, height: 590).ignoresSafeArea(.container, edges: .top).tint(
+      .teal
+    )
+    .animation(
+      reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.85),
+      value: permissions.granted
+    )
+    .onAppear { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) { entrance = true } }
   }
 
   private func complete() {

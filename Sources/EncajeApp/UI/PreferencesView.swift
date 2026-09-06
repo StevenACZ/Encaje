@@ -52,7 +52,7 @@ struct PreferencesView: View {
                 ForEach(AppLanguage.allCases, id: \.self) { language in
                   Text(language.label).tag(language)
                 }
-              }.labelsHidden().frame(width: 150)
+              }.labelsHidden().fixedSize().frame(width: 150, alignment: .trailing)
             }
             Divider()
             HStack {
