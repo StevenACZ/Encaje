@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-18
+
 ### Changed
 
 - New versions show up on their own within minutes: Encaje checks quietly when you open the menu bar panel, after waking and every 30 minutes (only while automatic checks are on).
