@@ -22,7 +22,7 @@ struct PreferencesView: View {
         GroupBox {
           HStack(spacing: 12) {
             Image(systemName: permissions.granted ? "checkmark.shield.fill" : "hand.raised.fill")
-              .font(.title2).foregroundStyle(.teal)
+              .font(.title2).foregroundStyle(permissions.granted ? Color.green : Color.blue)
             VStack(alignment: .leading, spacing: 3) {
               Text(localized("Accessibility", "Accesibilidad")).font(.headline)
               Text(
@@ -40,7 +40,9 @@ struct PreferencesView: View {
             Button(
               permissions.granted
                 ? localized("Review setup", "Ver bienvenida")
-                : localized("Allow access", "Dar acceso"), action: showWelcome)
+                : localized("Allow access", "Dar acceso"), action: showWelcome
+            )
+            .tint(.blue)
           }.padding(9)
         }
         GroupBox {

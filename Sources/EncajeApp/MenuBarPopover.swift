@@ -149,6 +149,9 @@ private struct MenuBarPopoverView: View {
         }
         Spacer(minLength: 0)
       }
+      if updates.available, updates.phase != .idle {
+        UpdateCardView()
+      }
       Button {
         model.paused.toggle()
       } label: {
@@ -165,9 +168,6 @@ private struct MenuBarPopoverView: View {
         .contentShape(RoundedRectangle(cornerRadius: 10))
       }.buttonStyle(.plain)
         .foregroundStyle(.white)
-      if updates.available, updates.phase != .idle {
-        UpdateActionView()
-      }
       VStack(spacing: 0) {
         row(
           localized("Configuration", "Configuración"), symbol: "slider.horizontal.3",
@@ -183,7 +183,7 @@ private struct MenuBarPopoverView: View {
       }.font(.system(size: 13, weight: .medium))
     }.padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 8).frame(width: 300).fixedSize(
       horizontal: false, vertical: true
-    ).tint(.teal)
+    ).background(Color(nsColor: .windowBackgroundColor)).tint(.teal)
   }
 
   private func row(_ text: String, symbol: String, action: @escaping () -> Void) -> some View {

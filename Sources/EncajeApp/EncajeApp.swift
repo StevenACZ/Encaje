@@ -52,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   private var welcomeWindow: NSWindow?
   private var refreshTimer: Timer?
   private let menuPopover = MenuBarPopover()
+  private let aboutWindow = AboutWindowController()
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     model = AppModel()
@@ -162,14 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
   private func showAbout() {
     menuPopover.close(restoreFocus: false)
-    NSApplication.shared.activate(ignoringOtherApps: true)
-    NSApplication.shared.orderFrontStandardAboutPanel(options: [
-      .applicationName: "Encaje", .applicationIcon: AppArtwork.icon,
-      .applicationVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
-        as? String ?? "",
-      .credits: NSAttributedString(
-        string: localized("Your space, your way.", "Tu espacio, a tu manera.")),
-    ])
+    aboutWindow.show()
   }
 
   private func item(_ title: String, _ selector: Selector) -> NSMenuItem {

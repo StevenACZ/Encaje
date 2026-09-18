@@ -17,7 +17,7 @@ struct WelcomeView: View {
         Circle().fill(.teal.opacity(0.10)).frame(width: 126, height: 126)
         if permissions.granted {
           Image(systemName: "checkmark.seal.fill").font(.system(size: 68)).foregroundStyle(
-            .teal.gradient
+            .green.gradient
           )
           .transition(.scale.combined(with: .opacity))
         } else {
@@ -89,7 +89,7 @@ struct WelcomeView: View {
         Button(localized("Allow Accessibility", "Dar acceso a Accesibilidad")) {
           permissions.request(from: sourceFrame())
         }
-        .buttonStyle(.borderedProminent).controlSize(.large)
+        .buttonStyle(.borderedProminent).controlSize(.large).tint(.blue)
         Text(
           localized(
             "Drag Encaje into the list, then enable its switch if asked.",
