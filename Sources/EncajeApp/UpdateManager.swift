@@ -13,6 +13,7 @@ final class UpdateManager: ObservableObject {
     case idle
     case available(version: String)
     case downloading(fraction: Double?)
+    case readyToInstall(version: String)
     case installing
     case failed(version: String)
   }
@@ -25,10 +26,12 @@ final class UpdateManager: ObservableObject {
   }
 
   static let autoCheckDefaultsKey = "autoUpdateCheckEnabled"
+  static let installNowCheckRetryLimit = 40
 
   @Published private(set) var phase: Phase = .idle
   @Published private(set) var releasePageURL: URL?
   @Published private(set) var manualCheckStatus: ManualCheckStatus = .idle
+  @Published private(set) var pendingVersion: String?
   @Published private(set) var autoCheckEnabled: Bool
 
   let isDevelopmentBuild =
@@ -43,8 +46,10 @@ final class UpdateManager: ObservableObject {
   private var driver: Driver?
   private var updaterDelegate: UpdaterDelegate?
 
-  private var installRequested = false
-  private var pendingVersion: String?
+  private(set) var installRequested = false
+  private(set) var installNowRequested = false
+  private(set) var resumeCheckPending = false
+  private var pendingInstallReply: ((SPUUserUpdateChoice) -> Void)?
   private var pendingIsInformationOnly = false
   private var expectedDownloadBytes: UInt64 = 0
   private var receivedDownloadBytes: UInt64 = 0
@@ -105,6 +110,26 @@ final class UpdateManager: ObservableObject {
     updater.checkForUpdates()
   }
 
+  func installNow() {
+    guard phase != .installing else { return }
+    if let reply = pendingInstallReply {
+      pendingInstallReply = nil
+      installRequested = true
+      phase = .installing
+      reply(.install)
+      return
+    }
+    guard updater != nil else { return }
+    handleInstallNowRequested()
+  }
+
+  func installLater() {
+    guard let reply = pendingInstallReply else { return }
+    pendingInstallReply = nil
+    installRequested = false
+    reply(.dismiss)
+  }
+
   func checkForUpdatesManually() {
     guard let updater, updater.sessionInProgress == false else { return }
     manualCheckResetTask?.cancel()
@@ -123,21 +148,55 @@ final class UpdateManager: ObservableObject {
     phase = .downloading(fraction: nil)
   }
 
+  func handleInstallNowRequested() {
+    installRequested = true
+    installNowRequested = true
+    resumeCheckPending = true
+    phase = .installing
+    startInstallNowCheck(attempt: 0)
+  }
+
+  func startInstallNowCheck(attempt: Int) {
+    guard resumeCheckPending else { return }
+    if let updater, updater.sessionInProgress == false {
+      resumeCheckPending = false
+      updater.checkForUpdates()
+      return
+    }
+    guard attempt < Self.installNowCheckRetryLimit else {
+      installRequested = false
+      installNowRequested = false
+      resumeCheckPending = false
+      phase = .failed(version: pendingVersion ?? "")
+      return
+    }
+    Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 250_000_000)
+      guard let self, !Task.isCancelled else { return }
+      self.startInstallNowCheck(attempt: attempt + 1)
+    }
+  }
+
   func handleUpdateFound(
     version: String,
     releasePage: URL?,
-    informationOnly: Bool
+    informationOnly: Bool,
+    stage: SPUUserUpdateStage
   ) -> SPUUserUpdateChoice {
+    resumeCheckPending = false
     pendingVersion = version
     pendingIsInformationOnly = informationOnly
     releasePageURL = releasePage
     finishManualCheck(status: .idle)
 
-    if installRequested && !informationOnly {
+    let prepared = stage != .notDownloaded
+    if !informationOnly, installRequested || (prepared && installNowRequested) {
+      phase = prepared ? .installing : .downloading(fraction: nil)
       return .install
     }
     installRequested = false
-    phase = .available(version: version)
+    installNowRequested = false
+    phase = prepared ? .readyToInstall(version: version) : .available(version: version)
     return .dismiss
   }
 
@@ -162,9 +221,16 @@ final class UpdateManager: ObservableObject {
     phase = .installing
   }
 
-  func handleReadyToInstall() -> SPUUserUpdateChoice {
-    phase = .installing
-    return .install
+  func handleReadyToInstall(reply: @escaping (SPUUserUpdateChoice) -> Void) {
+    if installNowRequested {
+      installNowRequested = false
+      resumeCheckPending = false
+      phase = .installing
+      reply(.install)
+      return
+    }
+    pendingInstallReply = reply
+    phase = .readyToInstall(version: pendingVersion ?? "")
   }
 
   func handleInstalling() {
@@ -172,7 +238,13 @@ final class UpdateManager: ObservableObject {
   }
 
   func handleNotFound() {
+    if resumeCheckPending {
+      pendingInstallReply = nil
+      return
+    }
     installRequested = false
+    installNowRequested = false
+    pendingInstallReply = nil
     pendingVersion = nil
     pendingIsInformationOnly = false
     releasePageURL = nil
@@ -181,21 +253,40 @@ final class UpdateManager: ObservableObject {
   }
 
   func handleError(_ message: String) {
+    if resumeCheckPending {
+      pendingInstallReply = nil
+      return
+    }
     finishManualCheck(status: .failed)
     if installRequested, let pendingVersion {
       log.error("Update install failed: \(message, privacy: .public)")
       phase = .failed(version: pendingVersion)
     } else {
       log.debug("Update check failed silently")
-      phase = pendingVersion.map { .available(version: $0) } ?? .idle
+      switch phase {
+      case .readyToInstall, .installing:
+        phase = .readyToInstall(version: pendingVersion ?? "")
+      case .idle, .available, .downloading, .failed:
+        phase = pendingVersion.map { .available(version: $0) } ?? .idle
+      }
     }
     installRequested = false
+    installNowRequested = false
+    pendingInstallReply = nil
   }
 
   func handleDismissInstallation() {
+    if resumeCheckPending {
+      pendingInstallReply = nil
+      return
+    }
     installRequested = false
+    installNowRequested = false
+    pendingInstallReply = nil
     switch phase {
-    case .downloading, .installing:
+    case .installing, .readyToInstall:
+      phase = .readyToInstall(version: pendingVersion ?? "")
+    case .downloading:
       phase = pendingVersion.map { .available(version: $0) } ?? .idle
     case .idle, .available, .failed:
       break
@@ -241,7 +332,8 @@ private final class Driver: NSObject, SPUUserDriver {
     let choice = manager.handleUpdateFound(
       version: appcastItem.displayVersionString,
       releasePage: appcastItem.infoURL,
-      informationOnly: appcastItem.isInformationOnlyUpdate
+      informationOnly: appcastItem.isInformationOnlyUpdate,
+      stage: state.stage
     )
     reply(choice)
   }
@@ -279,7 +371,7 @@ private final class Driver: NSObject, SPUUserDriver {
   func showExtractionReceivedProgress(_ progress: Double) {}
 
   func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
-    reply(manager.handleReadyToInstall())
+    manager.handleReadyToInstall(reply: reply)
   }
 
   func showInstallingUpdate(

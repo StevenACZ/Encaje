@@ -40,7 +40,7 @@ private struct PermissionGuideCard: View {
       if state.success {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 44, weight: .medium))
-          .foregroundStyle(.mint)
+          .foregroundStyle(.green)
           .transition(.scale.combined(with: .opacity))
       } else {
         PermissionAppIcon()
@@ -57,6 +57,7 @@ private struct PermissionGuideCard: View {
             : localized("Drag Encaje above", "Arrastra Encaje arriba")
         )
         .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(state.success ? Color.green : Color.blue)
         Text(
           state.success
             ? localized(
@@ -79,7 +80,10 @@ private struct PermissionGuideCard: View {
     .padding(18)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
-    .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(.cyan.opacity(0.35), lineWidth: 1))
+    .overlay(
+      RoundedRectangle(cornerRadius: 22).strokeBorder(
+        (state.success ? Color.green : Color.blue).opacity(0.35), lineWidth: 1)
+    )
     .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: state.success)
   }
 }

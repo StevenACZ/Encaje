@@ -24,3 +24,5 @@ Public macOS window manager. Swift 6, SwiftPM, macOS 14+, Apple Silicon.
 - Readiness text must use the full model.ready state, not permission alone.
 - Cross-display acceptance must cover a full round trip between unequal screen sizes; verify the realized frame after settling.
 - Custom button backgrounds, padding and contentShape must live inside the label; verify physical clicks in empty painted edges, not only AX activation.
+
+Permission colors: Accessibility blue; green means granted/ready. Keep labels and icons.
