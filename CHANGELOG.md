@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-18
+
+### Added
+
+- An update card in the menu bar panel with download progress, a percentage and a
+  ready-to-install state offering Install now or Later.
+- A redesigned About window with the version and build number, update status and
+  actions, and links to the project and its issue tracker.
+
+### Changed
+
+- Made the menu bar panel opaque instead of translucent.
+- Install now quits and reopens Encaje by itself once the update is installed.
+- Moved the update card above the pause/resume button in the menu bar panel.
+- Use blue consistently for Accessibility setup and green for granted access, preserving the app brand.
+
 ## [1.0.1] - 2026-09-06
 
 ### Changed
