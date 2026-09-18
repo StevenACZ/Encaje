@@ -6,8 +6,7 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
-- Retry after a failed update now downloads again and stops at "Ready to install",
-  asking before it installs.
+- Retry and Update never install on their own: a prepared update always stops at "Ready to install" and waits for "Install now".
 
 ## [1.1.0] - 2026-09-18
 
