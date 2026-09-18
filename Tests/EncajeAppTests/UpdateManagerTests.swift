@@ -7,8 +7,20 @@ import XCTest
 @MainActor
 final class UpdateManagerTests: XCTestCase {
 
+  private static let suiteName = "Encaje.UpdaterTests"
+
   private func makeManager() -> UpdateManager {
-    UpdateManager(defaults: UserDefaults(suiteName: "Encaje.UpdaterTests." + UUID().uuidString)!)
+    UpdateManager(defaults: UserDefaults(suiteName: Self.suiteName)!)
+  }
+
+  override func setUp() {
+    super.setUp()
+    UserDefaults.standard.removePersistentDomain(forName: Self.suiteName)
+  }
+
+  override func tearDown() {
+    UserDefaults.standard.removePersistentDomain(forName: Self.suiteName)
+    super.tearDown()
   }
 
   func testScheduledFoundUpdateIsDismissedAndSurfaced() {
@@ -641,14 +653,33 @@ final class UpdateManagerTests: XCTestCase {
       .deletingLastPathComponent()
       .deletingLastPathComponent()
 
-    for surface in [
-      "Sources/EncajeApp/MenuBarPopover.swift",
-      "Sources/EncajeApp/UI/AboutWindowController.swift",
-      "Sources/EncajeApp/EncajeApp.swift",
-    ] {
+    let surfaces: [(path: String, openBranch: String, openEnd: String)] = [
+      (
+        "Sources/EncajeApp/MenuBarPopover.swift", "close()\n      return\n    }",
+        "previousApplication = NSWorkspace.shared.frontmostApplication"
+      ),
+      (
+        "Sources/EncajeApp/UI/AboutWindowController.swift", "func show() {",
+        "let target = window ?? makeWindow()"
+      ),
+      (
+        "Sources/EncajeApp/EncajeApp.swift", "@objc private func showSettings() {",
+        "model.refreshLoginState()"
+      ),
+    ]
+
+    for surface in surfaces {
       let source = try String(
-        contentsOf: root.appendingPathComponent(surface), encoding: .utf8)
-      XCTAssertTrue(source.contains("UpdateManager.shared.surfaceDidOpen()"), surface)
+        contentsOf: root.appendingPathComponent(surface.path), encoding: .utf8)
+      let openBranch = try XCTUnwrap(source.range(of: surface.openBranch), surface.path)
+      let openEnd = try XCTUnwrap(
+        source.range(of: surface.openEnd, range: openBranch.upperBound..<source.endIndex),
+        surface.path)
+      XCTAssertNotNil(
+        source.range(
+          of: "UpdateManager.shared.surfaceDidOpen()",
+          range: openBranch.upperBound..<openEnd.lowerBound),
+        surface.path)
     }
   }
 
