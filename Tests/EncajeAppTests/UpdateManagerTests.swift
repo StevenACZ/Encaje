@@ -7,7 +7,7 @@ import XCTest
 @MainActor
 final class UpdateManagerTests: XCTestCase {
 
-  private static let suiteName = "Encaje.UpdaterTests"
+  nonisolated private static let suiteName = "Encaje.UpdaterTests"
 
   private func makeManager() -> UpdateManager {
     UpdateManager(defaults: UserDefaults(suiteName: Self.suiteName)!)
