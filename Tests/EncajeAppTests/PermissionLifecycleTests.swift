@@ -4,8 +4,9 @@ import XCTest
 
 final class PermissionLifecycleTests: XCTestCase {
   @MainActor func testDismissPreservesPendingSetupAcrossCoordinatorInstances() {
-    let name = "Encaje.Tests.\(UUID().uuidString)"
+    let name = "Encaje.PermissionLifecycleTests"
     let defaults = UserDefaults(suiteName: name)!
+    defaults.removePersistentDomain(forName: name)
     defer { defaults.removePersistentDomain(forName: name) }
     defaults.set(true, forKey: "permissionSetupPending")
     defaults.set(true, forKey: "welcomeComplete")
