@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-09-18
+
+### Fixed
+
+- Quiet checks keep running while an update is on offer and after a failed update, so a newer version shows up without restarting Encaje. The card only changes when a newer version is actually found, a failed update keeps its Retry, and nothing is ever installed without "Install now".
+- Pressing Update while a slow check is still running no longer ends in a failed update: the download waits for that check to finish and still stops at "Ready to install".
+
 ## [1.1.1] - 2026-09-18
 
 ### Changed

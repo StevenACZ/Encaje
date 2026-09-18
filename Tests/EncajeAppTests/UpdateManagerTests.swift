@@ -736,15 +736,18 @@ final class UpdateManagerTests: XCTestCase {
     XCTAssertEqual(backgroundChecks, 0)
   }
 
-  func testBackgroundCheckIsSkippedWhileACardIsShowing() {
+  func testBackgroundCheckIsSkippedWhileADownloadRuns() {
     let manager = makeDiscoveryManager()
+    manager.resumeCheckStarter = { _ in }
     _ = manager.handleUpdateFound(
       version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.installPendingUpdate()
+    manager.handleDownloadInitiated()
 
     manager.requestBackgroundCheck()
 
     XCTAssertEqual(backgroundChecks, 0)
-    XCTAssertEqual(manager.phase, .available(version: "9.9.9"))
+    XCTAssertEqual(manager.phase, .downloading(fraction: nil))
   }
 
   func testDisabledAutoChecksFireNoTrigger() {
@@ -945,6 +948,330 @@ final class UpdateManagerTests: XCTestCase {
     XCTAssertEqual(manager.phase, .downloading(fraction: nil))
     XCTAssertTrue(manager.resumeCheckPending)
     XCTAssertEqual(resumeStarts, 2)
+  }
+
+  private func armLaterState(_ manager: UpdateManager) {
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.installPendingUpdate()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.handleDownloadInitiated()
+    manager.handleDownloadExpectedLength(1_000)
+    manager.handleDownloadReceived(bytes: 1_000)
+    manager.handleReadyToInstall { _ in }
+    manager.installLater()
+  }
+
+  private func armFailedCard(_ manager: UpdateManager) {
+    manager.resumeCheckStarter = { _ in }
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.installPendingUpdate()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.handleError("download died")
+  }
+
+  func testRestingCardsAllowAQuietCheck() {
+    let idle = makeDiscoveryManager()
+    XCTAssertTrue(idle.phaseAllowsQuietCheck)
+
+    let available = makeDiscoveryManager()
+    _ = available.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    XCTAssertEqual(available.phase, .available(version: "9.9.9"))
+    XCTAssertTrue(available.phaseAllowsQuietCheck)
+
+    let failed = makeDiscoveryManager()
+    armFailedCard(failed)
+    XCTAssertEqual(failed.phase, .failed(version: "9.9.9"))
+    XCTAssertTrue(failed.phaseAllowsQuietCheck)
+  }
+
+  func testWorkingPhasesBlockAQuietCheck() {
+    let downloading = makeDiscoveryManager()
+    downloading.handleDownloadInitiated()
+    XCTAssertFalse(downloading.phaseAllowsQuietCheck)
+
+    let installing = makeDiscoveryManager()
+    installing.handleExtractionStarted()
+    XCTAssertFalse(installing.phaseAllowsQuietCheck)
+
+    let held = makeDiscoveryManager()
+    _ = held.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    held.handleReadyToInstall { _ in }
+    XCTAssertEqual(held.phase, .readyToInstall(version: "9.9.9"))
+    XCTAssertFalse(held.phaseAllowsQuietCheck)
+
+    let afterLater = makeDiscoveryManager()
+    armLaterState(afterLater)
+    XCTAssertEqual(afterLater.phase, .readyToInstall(version: "9.9.9"))
+    XCTAssertFalse(afterLater.phaseAllowsQuietCheck)
+  }
+
+  func testPendingIntentsBlockAQuietCheck() {
+    let manualCheck = makeDiscoveryManager()
+    manualCheck.userCheckStarter = { _ in }
+    manualCheck.checkForUpdatesManually()
+    XCTAssertEqual(manualCheck.phase, .idle)
+    XCTAssertFalse(manualCheck.phaseAllowsQuietCheck)
+
+    let resume = makeDiscoveryManager()
+    resume.resumeCheckStarter = { _ in }
+    _ = resume.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    resume.installPendingUpdate()
+    XCTAssertTrue(resume.installRequested)
+    XCTAssertTrue(resume.resumeCheckPending)
+    XCTAssertFalse(resume.phaseAllowsQuietCheck)
+
+    let installNow = makeDiscoveryManager()
+    installNow.resumeCheckStarter = { _ in }
+    armLaterState(installNow)
+    installNow.installNow()
+    XCTAssertTrue(installNow.installNowRequested)
+    XCTAssertFalse(installNow.phaseAllowsQuietCheck)
+  }
+
+  func testAQuietCheckNeedsALiveUpdaterAndKeepsTheThrottleUnused() {
+    let manager = makeDiscoveryManager()
+    manager.hasLiveUpdater = { _ in false }
+
+    manager.requestBackgroundCheck()
+
+    XCTAssertEqual(backgroundChecks, 0)
+
+    manager.hasLiveUpdater = { _ in true }
+    manager.requestBackgroundCheck()
+
+    XCTAssertEqual(backgroundChecks, 1)
+  }
+
+  func testAQuietCheckRunsFromAFailedCard() {
+    let manager = makeDiscoveryManager()
+    armFailedCard(manager)
+    XCTAssertEqual(manager.phase, .failed(version: "9.9.9"))
+
+    manager.requestBackgroundCheck()
+
+    XCTAssertEqual(backgroundChecks, 1)
+    XCTAssertEqual(manager.phase, .failed(version: "9.9.9"))
+  }
+
+  func testAnUnattendedSameVersionKeepsTheFailedCard() {
+    let manager = makeDiscoveryManager()
+    armFailedCard(manager)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .failed(version: "9.9.9"))
+    XCTAssertEqual(manager.pendingVersion, "9.9.9")
+    XCTAssertEqual(backgroundChecks, 0)
+  }
+
+  func testAnUnattendedSameVersionKeepsTheAvailableCard() {
+    let manager = makeDiscoveryManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: URL(string: "https://example.com/release"),
+      informationOnly: false, stage: .notDownloaded)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .available(version: "9.9.9"))
+    XCTAssertEqual(manager.releasePageURL?.absoluteString, "https://example.com/release")
+  }
+
+  func testTheStagedUpdateReofferedAfterLaterKeepsTheReadyCard() {
+    let manager = makeDiscoveryManager()
+    armLaterState(manager)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .installing)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+    XCTAssertFalse(manager.installRequested)
+    XCTAssertFalse(manager.installNowRequested)
+  }
+
+  func testAnUnattendedOlderVersionKeepsTheCard() {
+    let manager = makeDiscoveryManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.8", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .available(version: "9.9.9"))
+    XCTAssertEqual(manager.pendingVersion, "9.9.9")
+  }
+
+  func testAnUnattendedNewerVersionReplacesTheAvailableCard() {
+    let manager = makeDiscoveryManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.10", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .available(version: "9.9.10"))
+    XCTAssertFalse(manager.installNowRequested)
+  }
+
+  func testAnUnattendedNewerVersionReplacesTheFailedCard() {
+    let manager = makeDiscoveryManager()
+    armFailedCard(manager)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.10", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .available(version: "9.9.10"))
+    XCTAssertFalse(manager.installRequested)
+    XCTAssertFalse(manager.installNowRequested)
+  }
+
+  func testAnUnattendedPreparedUpdateNeverInstallsItself() {
+    let manager = makeDiscoveryManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.10", releasePage: nil, informationOnly: false, stage: .downloaded)
+    var choices: [SPUUserUpdateChoice] = []
+    manager.handleReadyToInstall { choices.append($0) }
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertTrue(choices.isEmpty)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.10"))
+  }
+
+  func testAQuietCheckWithoutAnyCallbackLeavesAManualCheckUsable() {
+    let manager = makeDiscoveryManager()
+    var userChecks = 0
+    manager.userCheckStarter = { _ in userChecks += 1 }
+
+    manager.requestBackgroundCheck()
+    XCTAssertEqual(backgroundChecks, 1)
+
+    manager.checkForUpdatesManually()
+    XCTAssertEqual(userChecks, 1)
+    XCTAssertEqual(manager.manualCheckStatus, .checking)
+
+    manager.handleNotFound()
+
+    XCTAssertEqual(manager.manualCheckStatus, .upToDate)
+    XCTAssertEqual(manager.phase, .idle)
+  }
+
+  func testAQuietCheckWithoutAnyCallbackLeavesTheUpdateClickUsable() {
+    let manager = makeDiscoveryManager()
+    var resumeStarts = 0
+    manager.resumeCheckStarter = { _ in resumeStarts += 1 }
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.requestBackgroundCheck()
+    XCTAssertEqual(backgroundChecks, 1)
+
+    manager.installPendingUpdate()
+
+    XCTAssertEqual(manager.phase, .downloading(fraction: nil))
+    XCTAssertEqual(resumeStarts, 1)
+  }
+
+  func testAManualCheckQueuedBehindAQuietSessionKeepsItsSpinner() {
+    let manager = makeDiscoveryManager()
+    var sessionInProgress = false
+    var userChecks = 0
+    manager.isSessionInProgress = { _ in sessionInProgress }
+    manager.userCheckStarter = { _ in userChecks += 1 }
+    manager.manualCheckStarter = { _ in }
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.requestBackgroundCheck()
+    XCTAssertEqual(backgroundChecks, 1)
+    sessionInProgress = true
+
+    manager.checkForUpdatesManually()
+    XCTAssertEqual(manager.manualCheckStatus, .checking)
+    XCTAssertEqual(userChecks, 0)
+
+    let quiet = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(quiet, .dismiss)
+    XCTAssertEqual(manager.manualCheckStatus, .checking)
+
+    sessionInProgress = false
+    manager.startManualCheck(attempt: 1)
+    XCTAssertEqual(userChecks, 1)
+    XCTAssertEqual(manager.manualCheckStatus, .checking)
+
+    let found = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(found, .dismiss)
+    XCTAssertEqual(manager.manualCheckStatus, .idle)
+    XCTAssertEqual(manager.phase, .available(version: "9.9.9"))
+  }
+
+  func testAManualCheckFromAFailedCardShowsTheSameVersionAgain() {
+    let manager = makeDiscoveryManager()
+    armFailedCard(manager)
+    manager.userCheckStarter = { _ in }
+
+    manager.checkForUpdatesManually()
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertEqual(manager.phase, .available(version: "9.9.9"))
+    XCTAssertEqual(manager.manualCheckStatus, .idle)
+  }
+
+  func testInstallNowAfterLaterStillInstalls() {
+    let manager = makeDiscoveryManager()
+    var resumeStarts = 0
+    manager.resumeCheckStarter = { _ in resumeStarts += 1 }
+    armLaterState(manager)
+
+    manager.installNow()
+    XCTAssertEqual(manager.phase, .installing)
+    XCTAssertEqual(resumeStarts, 2)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .downloaded)
+
+    XCTAssertEqual(choice, .install)
+    XCTAssertEqual(manager.phase, .installing)
+  }
+
+  func testLaterDropsTheConsentForTheSameVersion() {
+    let manager = makeDiscoveryManager()
+    manager.resumeCheckStarter = { _ in }
+    armLaterState(manager)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertFalse(manager.installRequested)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+  }
+
+  func testTheResumeWindowOutlastsASlowSession() {
+    let window =
+      Double(UpdateManager.installNowCheckRetryLimit) * UpdateManager.installNowCheckRetryDelay
+
+    XCTAssertGreaterThanOrEqual(window, 70)
   }
 
 }
