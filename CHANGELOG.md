@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Quiet checks keep running while an update card is waiting and after a failed update, so a newer version shows up without restarting Encaje. The card only changes when a newer version is actually found, a failed update keeps its Retry, and nothing is ever installed without "Install now".
+
 ## [1.1.1] - 2026-09-18
 
 ### Changed
