@@ -27,6 +27,8 @@ final class UpdateManager: ObservableObject {
 
   static let autoCheckDefaultsKey = "autoUpdateCheckEnabled"
   static let installNowCheckRetryLimit = 40
+  static let backgroundCheckInterval: TimeInterval = 30 * 60
+  static let backgroundCheckThrottle: TimeInterval = 5 * 60
 
   @Published private(set) var phase: Phase = .idle
   @Published private(set) var releasePageURL: URL?
@@ -49,12 +51,34 @@ final class UpdateManager: ObservableObject {
   private(set) var installRequested = false
   private(set) var installNowRequested = false
   private(set) var resumeCheckPending = false
+  var hasLiveUpdater: @MainActor (UpdateManager) -> Bool = { $0.updater != nil }
+  var resumeCheckStarter: @MainActor (UpdateManager) -> Void = {
+    $0.startInstallNowCheck(attempt: 0)
+  }
+  var manualCheckStarter: @MainActor (UpdateManager) -> Void = { $0.startManualCheck(attempt: 0) }
+  var backgroundCheckStarter: @MainActor (UpdateManager) -> Void = {
+    $0.updater?.checkForUpdatesInBackground()
+  }
+  var userCheckStarter: @MainActor (UpdateManager) -> Void = { $0.updater?.checkForUpdates() }
+  var backgroundCheckIntervalProvider: @MainActor () -> TimeInterval = {
+    UpdateManager.backgroundCheckInterval
+  }
+  var isSessionInProgress: @MainActor (UpdateManager) -> Bool = {
+    $0.updater?.sessionInProgress == true
+  }
+  var monotonicClock: @MainActor () -> TimeInterval = {
+    TimeInterval(clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW)) / 1_000_000_000
+  }
   private var pendingInstallReply: ((SPUUserUpdateChoice) -> Void)?
   private var pendingIsInformationOnly = false
   private var expectedDownloadBytes: UInt64 = 0
   private var receivedDownloadBytes: UInt64 = 0
   private var manualCheckPending = false
+  private var manualCheckWaiting = false
   private var manualCheckResetTask: Task<Void, Never>?
+  private var backgroundCheckTimer: Timer?
+  private var wakeObserver: NSObjectProtocol?
+  private var lastBackgroundCheck: TimeInterval?
 
   init(defaults: UserDefaults = AppLanguage.defaults) {
     self.defaults = defaults
@@ -91,23 +115,80 @@ final class UpdateManager: ObservableObject {
     self.driver = driver
     self.updaterDelegate = updaterDelegate
     self.updater = updater
+    if autoCheckEnabled { startBackgroundDiscovery() }
   }
 
   func setAutoCheckEnabled(_ enabled: Bool) {
     autoCheckEnabled = enabled
     defaults.set(enabled, forKey: Self.autoCheckDefaultsKey)
     updater?.automaticallyChecksForUpdates = enabled
+    if enabled {
+      startBackgroundDiscovery()
+    } else {
+      stopBackgroundDiscovery()
+    }
+  }
+
+  var backgroundDiscoveryArmed: Bool { backgroundCheckTimer != nil }
+
+  func startBackgroundDiscovery() {
+    guard backgroundCheckTimer == nil else { return }
+    let interval = backgroundCheckIntervalProvider()
+    let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+      Task { @MainActor in self?.requestBackgroundCheck() }
+    }
+    timer.tolerance = interval / 10
+    RunLoop.main.add(timer, forMode: .common)
+    backgroundCheckTimer = timer
+    wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated { self?.requestBackgroundCheck() }
+    }
+  }
+
+  func stopBackgroundDiscovery() {
+    backgroundCheckTimer?.invalidate()
+    backgroundCheckTimer = nil
+    if let wakeObserver {
+      NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+      self.wakeObserver = nil
+    }
+  }
+
+  func requestBackgroundCheck() {
+    guard autoCheckEnabled, phase == .idle, !isSessionInProgress(self) else { return }
+    let now = monotonicClock()
+    if let lastBackgroundCheck, now - lastBackgroundCheck < Self.backgroundCheckThrottle { return }
+    lastBackgroundCheck = now
+    backgroundCheckStarter(self)
+  }
+
+  func surfaceDidOpen() {
+    requestBackgroundCheck()
   }
 
   func installPendingUpdate() {
-    guard let updater else { return }
+    guard hasLiveUpdater(self) else { return }
     if pendingIsInformationOnly {
       openReleasePage()
       return
     }
-    guard updater.sessionInProgress == false else { return }
-    handleInstallRequested()
-    updater.checkForUpdates()
+    if resumeCheckPending {
+      installRequested = true
+      installNowRequested = false
+      phase = .downloading(fraction: nil)
+      return
+    }
+    if isSessionInProgress(self) {
+      switch phase {
+      case .downloading, .installing:
+        return
+      case .idle, .available, .readyToInstall, .failed:
+        break
+      }
+    }
+    handleRetryRequested()
   }
 
   func installNow() {
@@ -119,8 +200,18 @@ final class UpdateManager: ObservableObject {
       reply(.install)
       return
     }
-    guard updater != nil else { return }
+    guard hasLiveUpdater(self) else { return }
     handleInstallNowRequested()
+  }
+
+  func retryPendingUpdate() {
+    guard phase != .installing else { return }
+    if pendingInstallReply != nil {
+      phase = .readyToInstall(version: pendingVersion ?? "")
+      return
+    }
+    guard hasLiveUpdater(self) else { return }
+    handleRetryRequested()
   }
 
   func installLater() {
@@ -131,11 +222,37 @@ final class UpdateManager: ObservableObject {
   }
 
   func checkForUpdatesManually() {
-    guard let updater, updater.sessionInProgress == false else { return }
+    guard hasLiveUpdater(self) else { return }
     manualCheckResetTask?.cancel()
     manualCheckPending = true
     manualCheckStatus = .checking
-    updater.checkForUpdates()
+    guard isSessionInProgress(self) else {
+      manualCheckWaiting = false
+      userCheckStarter(self)
+      return
+    }
+    guard !manualCheckWaiting else { return }
+    manualCheckWaiting = true
+    manualCheckStarter(self)
+  }
+
+  func startManualCheck(attempt: Int) {
+    guard manualCheckWaiting else { return }
+    guard attempt < Self.installNowCheckRetryLimit else {
+      manualCheckWaiting = false
+      finishManualCheck(status: .idle)
+      return
+    }
+    guard isSessionInProgress(self) else {
+      manualCheckWaiting = false
+      userCheckStarter(self)
+      return
+    }
+    Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 250_000_000)
+      guard let self, !Task.isCancelled else { return }
+      self.startManualCheck(attempt: attempt + 1)
+    }
   }
 
   func openReleasePage() {
@@ -153,14 +270,22 @@ final class UpdateManager: ObservableObject {
     installNowRequested = true
     resumeCheckPending = true
     phase = .installing
-    startInstallNowCheck(attempt: 0)
+    resumeCheckStarter(self)
+  }
+
+  func handleRetryRequested() {
+    installRequested = true
+    installNowRequested = false
+    resumeCheckPending = true
+    phase = .downloading(fraction: nil)
+    resumeCheckStarter(self)
   }
 
   func startInstallNowCheck(attempt: Int) {
     guard resumeCheckPending else { return }
-    if let updater, updater.sessionInProgress == false {
+    if hasLiveUpdater(self), !isSessionInProgress(self) {
       resumeCheckPending = false
-      updater.checkForUpdates()
+      userCheckStarter(self)
       return
     }
     guard attempt < Self.installNowCheckRetryLimit else {
@@ -190,7 +315,7 @@ final class UpdateManager: ObservableObject {
     finishManualCheck(status: .idle)
 
     let prepared = stage != .notDownloaded
-    if !informationOnly, installRequested || (prepared && installNowRequested) {
+    if !informationOnly, prepared ? installNowRequested : installRequested {
       phase = prepared ? .installing : .downloading(fraction: nil)
       return .install
     }
@@ -222,9 +347,9 @@ final class UpdateManager: ObservableObject {
   }
 
   func handleReadyToInstall(reply: @escaping (SPUUserUpdateChoice) -> Void) {
+    resumeCheckPending = false
     if installNowRequested {
       installNowRequested = false
-      resumeCheckPending = false
       phase = .installing
       reply(.install)
       return

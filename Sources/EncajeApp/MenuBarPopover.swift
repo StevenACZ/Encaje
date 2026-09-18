@@ -20,6 +20,7 @@ final class MenuBarPopover: NSObject, NSPopoverDelegate {
       close()
       return
     }
+    UpdateManager.shared.surfaceDidOpen()
     previousApplication = NSWorkspace.shared.frontmostApplication
     self.button = button
     let content = MenuBarPopoverView(
