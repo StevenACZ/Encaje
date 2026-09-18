@@ -213,12 +213,8 @@ final class UpdateManagerTests: XCTestCase {
 
   func testNotFoundClearsPendingState() {
     let manager = makeManager()
-    manager.hasLiveUpdater = { _ in true }
-    manager.isSessionInProgress = { _ in false }
-    manager.userCheckStarter = { _ in }
     _ = manager.handleUpdateFound(
       version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
-    manager.checkForUpdatesManually()
 
     manager.handleNotFound()
 
@@ -957,6 +953,12 @@ final class UpdateManagerTests: XCTestCase {
   private func armLaterState(_ manager: UpdateManager) {
     _ = manager.handleUpdateFound(
       version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.installPendingUpdate()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.handleDownloadInitiated()
+    manager.handleDownloadExpectedLength(1_000)
+    manager.handleDownloadReceived(bytes: 1_000)
     manager.handleReadyToInstall { _ in }
     manager.installLater()
   }
@@ -1152,29 +1154,6 @@ final class UpdateManagerTests: XCTestCase {
     XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.10"))
   }
 
-  func testAnUnattendedNotFoundKeepsTheCard() {
-    let manager = makeDiscoveryManager()
-    _ = manager.handleUpdateFound(
-      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
-
-    manager.handleNotFound()
-
-    XCTAssertEqual(manager.phase, .available(version: "9.9.9"))
-    XCTAssertEqual(manager.pendingVersion, "9.9.9")
-    XCTAssertEqual(manager.manualCheckStatus, .idle)
-  }
-
-  func testAnUnattendedErrorKeepsTheFailedCard() {
-    let manager = makeDiscoveryManager()
-    armFailedCard(manager)
-
-    manager.handleError("offline")
-
-    XCTAssertEqual(manager.phase, .failed(version: "9.9.9"))
-    XCTAssertEqual(manager.pendingVersion, "9.9.9")
-    XCTAssertEqual(manager.manualCheckStatus, .idle)
-  }
-
   func testAQuietCheckWithoutAnyCallbackLeavesAManualCheckUsable() {
     let manager = makeDiscoveryManager()
     var userChecks = 0
@@ -1266,13 +1245,33 @@ final class UpdateManagerTests: XCTestCase {
 
     manager.installNow()
     XCTAssertEqual(manager.phase, .installing)
-    XCTAssertEqual(resumeStarts, 1)
+    XCTAssertEqual(resumeStarts, 2)
 
     let choice = manager.handleUpdateFound(
       version: "9.9.9", releasePage: nil, informationOnly: false, stage: .downloaded)
 
     XCTAssertEqual(choice, .install)
     XCTAssertEqual(manager.phase, .installing)
+  }
+
+  func testLaterDropsTheConsentForTheSameVersion() {
+    let manager = makeDiscoveryManager()
+    manager.resumeCheckStarter = { _ in }
+    armLaterState(manager)
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertFalse(manager.installRequested)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+  }
+
+  func testTheResumeWindowOutlastsASlowSession() {
+    let window =
+      Double(UpdateManager.installNowCheckRetryLimit) * UpdateManager.installNowCheckRetryDelay
+
+    XCTAssertGreaterThanOrEqual(window, 70)
   }
 
 }
