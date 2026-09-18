@@ -98,7 +98,7 @@ struct UpdateActionView: View {
           systemImage: "arrow.triangle.2.circlepath")
       case .failed:
         Button(localized("Update failed. Retry", "La actualización falló. Reintentar")) {
-          updates.installNow()
+          updates.retryPendingUpdate()
         }
       }
     }.font(.callout).frame(maxWidth: .infinity, alignment: .leading)
@@ -216,7 +216,7 @@ struct UpdateCardView: View {
     case .installing:
       ProgressView().progressViewStyle(.linear).tint(.teal)
     case .failed:
-      prominentButton(localized("Retry", "Reintentar")) { updates.installNow() }
+      prominentButton(localized("Retry", "Reintentar")) { updates.retryPendingUpdate() }
     }
   }
 

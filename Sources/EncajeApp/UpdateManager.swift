@@ -48,6 +48,7 @@ final class UpdateManager: ObservableObject {
 
   private(set) var installRequested = false
   private(set) var installNowRequested = false
+  private(set) var retryRequested = false
   private(set) var resumeCheckPending = false
   private var pendingInstallReply: ((SPUUserUpdateChoice) -> Void)?
   private var pendingIsInformationOnly = false
@@ -112,6 +113,7 @@ final class UpdateManager: ObservableObject {
 
   func installNow() {
     guard phase != .installing else { return }
+    retryRequested = false
     if let reply = pendingInstallReply {
       pendingInstallReply = nil
       installRequested = true
@@ -123,10 +125,17 @@ final class UpdateManager: ObservableObject {
     handleInstallNowRequested()
   }
 
+  func retryPendingUpdate() {
+    guard phase != .installing else { return }
+    guard updater != nil else { return }
+    handleRetryRequested()
+  }
+
   func installLater() {
     guard let reply = pendingInstallReply else { return }
     pendingInstallReply = nil
     installRequested = false
+    retryRequested = false
     reply(.dismiss)
   }
 
@@ -156,6 +165,15 @@ final class UpdateManager: ObservableObject {
     startInstallNowCheck(attempt: 0)
   }
 
+  func handleRetryRequested() {
+    installRequested = true
+    installNowRequested = false
+    retryRequested = true
+    resumeCheckPending = true
+    phase = .downloading(fraction: nil)
+    startInstallNowCheck(attempt: 0)
+  }
+
   func startInstallNowCheck(attempt: Int) {
     guard resumeCheckPending else { return }
     if let updater, updater.sessionInProgress == false {
@@ -166,6 +184,7 @@ final class UpdateManager: ObservableObject {
     guard attempt < Self.installNowCheckRetryLimit else {
       installRequested = false
       installNowRequested = false
+      retryRequested = false
       resumeCheckPending = false
       phase = .failed(version: pendingVersion ?? "")
       return
@@ -190,12 +209,17 @@ final class UpdateManager: ObservableObject {
     finishManualCheck(status: .idle)
 
     let prepared = stage != .notDownloaded
-    if !informationOnly, installRequested || (prepared && installNowRequested) {
+    if !informationOnly, retryRequested, !prepared {
+      phase = .downloading(fraction: nil)
+      return .install
+    }
+    if !informationOnly, !retryRequested, installRequested || (prepared && installNowRequested) {
       phase = prepared ? .installing : .downloading(fraction: nil)
       return .install
     }
     installRequested = false
     installNowRequested = false
+    retryRequested = false
     phase = prepared ? .readyToInstall(version: version) : .available(version: version)
     return .dismiss
   }
@@ -229,6 +253,7 @@ final class UpdateManager: ObservableObject {
       reply(.install)
       return
     }
+    retryRequested = false
     pendingInstallReply = reply
     phase = .readyToInstall(version: pendingVersion ?? "")
   }
@@ -244,6 +269,7 @@ final class UpdateManager: ObservableObject {
     }
     installRequested = false
     installNowRequested = false
+    retryRequested = false
     pendingInstallReply = nil
     pendingVersion = nil
     pendingIsInformationOnly = false
@@ -272,6 +298,7 @@ final class UpdateManager: ObservableObject {
     }
     installRequested = false
     installNowRequested = false
+    retryRequested = false
     pendingInstallReply = nil
   }
 
@@ -282,6 +309,7 @@ final class UpdateManager: ObservableObject {
     }
     installRequested = false
     installNowRequested = false
+    retryRequested = false
     pendingInstallReply = nil
     switch phase {
     case .installing, .readyToInstall:

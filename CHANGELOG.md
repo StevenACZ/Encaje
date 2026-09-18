@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Retry after a failed update now downloads again and stops at "Ready to install",
+  asking before it installs.
+
 ## [1.1.0] - 2026-09-18
 
 ### Added

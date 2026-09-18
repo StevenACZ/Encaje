@@ -470,4 +470,77 @@ final class UpdateManagerTests: XCTestCase {
     XCTAssertFalse(manager.installNowRequested)
   }
 
+  func testRetryOnANotDownloadedStageStopsAtTheReadyCard() {
+    let manager = makeManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.handleRetryRequested()
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    var choices: [SPUUserUpdateChoice] = []
+    manager.handleReadyToInstall { choices.append($0) }
+
+    XCTAssertEqual(choice, .install)
+    XCTAssertTrue(choices.isEmpty)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+    XCTAssertFalse(manager.installNowRequested)
+  }
+
+  func testRetryOnADownloadedStageStopsAtTheReadyCard() {
+    let manager = makeManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .downloaded)
+    manager.handleRetryRequested()
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .downloaded)
+    var choices: [SPUUserUpdateChoice] = []
+    manager.handleReadyToInstall { choices.append($0) }
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertTrue(choices.isEmpty)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+    XCTAssertFalse(manager.retryRequested)
+    XCTAssertFalse(manager.installNowRequested)
+  }
+
+  func testRetryOnAnInstallingStageStopsAtTheReadyCard() {
+    let manager = makeManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .installing)
+    manager.handleRetryRequested()
+
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .installing)
+    var choices: [SPUUserUpdateChoice] = []
+    manager.handleReadyToInstall { choices.append($0) }
+
+    XCTAssertEqual(choice, .dismiss)
+    XCTAssertTrue(choices.isEmpty)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+    XCTAssertFalse(manager.retryRequested)
+    XCTAssertFalse(manager.installNowRequested)
+  }
+
+  func testRetryThenInstallNowStillInstalls() {
+    let manager = makeManager()
+    _ = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .notDownloaded)
+    manager.handleRetryRequested()
+    XCTAssertEqual(
+      manager.handleUpdateFound(
+        version: "9.9.9", releasePage: nil, informationOnly: false, stage: .downloaded),
+      .dismiss)
+    XCTAssertEqual(manager.phase, .readyToInstall(version: "9.9.9"))
+
+    manager.handleInstallNowRequested()
+    let choice = manager.handleUpdateFound(
+      version: "9.9.9", releasePage: nil, informationOnly: false, stage: .downloaded)
+
+    XCTAssertEqual(choice, .install)
+    XCTAssertEqual(manager.phase, .installing)
+    XCTAssertFalse(manager.retryRequested)
+  }
+
 }

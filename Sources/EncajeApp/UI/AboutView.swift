@@ -126,7 +126,7 @@ struct AboutView: View {
       progressCapsule(text: localized("Installing and restarting…", "Instalando y reiniciando…"))
     case .failed:
       Button {
-        updates.installNow()
+        updates.retryPendingUpdate()
       } label: {
         capsule(
           symbol: "exclamationmark.arrow.circlepath",
