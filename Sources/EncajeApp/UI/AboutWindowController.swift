@@ -8,6 +8,7 @@ final class AboutWindowController {
   private var layoutObserver: AnyCancellable?
 
   func show() {
+    UpdateManager.shared.surfaceDidOpen()
     let target = window ?? makeWindow()
     window = target
     resize(target)

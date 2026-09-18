@@ -4,9 +4,15 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- New versions show up on their own within minutes: Encaje checks quietly when you open the menu bar panel, after waking and every 30 minutes (only while automatic checks are on).
+
 ### Fixed
 
 - Retry and Update never install on their own: a prepared update always stops at "Ready to install" and waits for "Install now".
+- "Check for updates" always answers now: if a quiet check is still running it shows "Checking…" and runs your check as soon as that one ends.
+- Pressing Update right after a quiet check no longer does nothing: the download starts as soon as that check finishes and still stops at "Ready to install".
 
 ## [1.1.0] - 2026-09-18
 

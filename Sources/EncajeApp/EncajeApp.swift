@@ -213,6 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
   @objc private func showSettings() {
     menuPopover.close(restoreFocus: false)
+    UpdateManager.shared.surfaceDidOpen()
     model.refreshLoginState()
     if settingsWindow == nil {
       let view = SettingsView(
