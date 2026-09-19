@@ -43,7 +43,7 @@ struct SettingsView: View {
           }.padding(12).background(.quaternary.opacity(0.5))
         }
       }
-    }.frame(width: 880, height: 660).ignoresSafeArea(.container, edges: .top).tint(.teal)
+    }.frame(width: 880, height: 690).ignoresSafeArea(.container, edges: .top).tint(.teal)
   }
 
   private var sidebar: some View {

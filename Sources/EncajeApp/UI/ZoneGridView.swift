@@ -13,6 +13,7 @@ struct ZoneGridView: View {
   @Binding var zone: GridZone
   var references: [ZoneReference] = []
   var editingChanged: (Bool) -> Void = { _ in }
+  @Environment(\.colorScheme) private var colorScheme
   @State private var dragging = false
   @GestureState private var gestureActive = false
 
@@ -25,10 +26,6 @@ struct ZoneGridView: View {
         ForEach(references) { reference in
           ZoneReferenceShape(reference: reference, size: proxy.size)
         }
-        Rectangle().fill(.teal.opacity(0.26))
-          .frame(width: cellWidth * Double(zone.width), height: cellHeight * Double(zone.height))
-          .overlay(Rectangle().strokeBorder(.teal, lineWidth: 2))
-          .offset(x: cellWidth * Double(zone.x), y: cellHeight * Double(zone.y))
         Path { path in
           for column in 0...zone.columns {
             let x = Double(column) * cellWidth
@@ -40,7 +37,11 @@ struct ZoneGridView: View {
             path.move(to: CGPoint(x: 0, y: y))
             path.addLine(to: CGPoint(x: proxy.size.width, y: y))
           }
-        }.stroke(.primary.opacity(0.12), lineWidth: 0.5)
+        }.stroke(.primary.opacity(colorScheme == .dark ? 0.12 : 0.22), lineWidth: 1)
+        Rectangle().fill(.teal.opacity(0.26))
+          .frame(width: cellWidth * Double(zone.width), height: cellHeight * Double(zone.height))
+          .overlay(Rectangle().strokeBorder(.teal, lineWidth: 2))
+          .offset(x: cellWidth * Double(zone.x), y: cellHeight * Double(zone.y))
         Text("\(zone.width) × \(zone.height)")
           .font(.system(size: 13, weight: .semibold, design: .rounded)).monospacedDigit()
           .padding(6).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 5))

@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-18
+
+### Fixed
+
+- The settings window is a little taller and Preferences is more compact, so the Updates card is no longer cut off at the bottom.
+- The disabled "Save current" and "Restore" buttons in Workspaces stay readable in Light appearance.
+- Switches that are off are clearly visible on the settings cards in Light appearance.
+- The zone grid lines and the small footnotes in Zones and Preferences are easier to read in both appearances.
+
 ## [1.1.2] - 2026-09-18
 
 ### Fixed
