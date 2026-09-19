@@ -18,7 +18,7 @@ struct PreferencesView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 18) {
+      VStack(alignment: .leading, spacing: 14) {
         GroupBox {
           HStack(spacing: 12) {
             Image(systemName: permissions.granted ? "checkmark.shield.fill" : "hand.raised.fill")
@@ -64,7 +64,7 @@ struct PreferencesView: View {
                 localized("Launch at login", "Abrir al iniciar sesión"),
                 isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) })
               )
-              .labelsHidden().toggleStyle(.switch)
+              .labelsHidden().toggleStyle(.settingSwitch)
             }.frame(maxWidth: .infinity)
             if model.loginApprovalNeeded {
               Button(localized("Approve in Login Items…", "Aprobar en Ítems de inicio…")) {
@@ -76,7 +76,7 @@ struct PreferencesView: View {
               Label(localized("Pause shortcuts", "Pausar atajos"), systemImage: "pause.circle")
               Spacer()
               Toggle(localized("Pause shortcuts", "Pausar atajos"), isOn: $model.paused)
-                .labelsHidden().toggleStyle(.switch)
+                .labelsHidden().toggleStyle(.settingSwitch)
             }.frame(maxWidth: .infinity)
             Divider()
             HStack {
@@ -126,8 +126,8 @@ struct PreferencesView: View {
             "Your window settings stay on your Mac.",
             "La configuración de tus ventanas se queda en tu Mac.")
         )
-        .font(.caption).foregroundStyle(.tertiary)
-      }.padding(22)
+        .font(.caption).foregroundStyle(.secondary)
+      }.padding(.horizontal, 22).padding(.vertical, 14)
     }
   }
 }

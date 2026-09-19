@@ -267,7 +267,7 @@ private struct ZoneRuleEditor: View {
               "Los atajos reemplazan esas teclas en otras apps. Puedes pausar Encaje cuando quieras."
             )
         )
-        .font(.system(size: 10)).foregroundStyle(.tertiary)
+        .font(.system(size: 10)).foregroundStyle(.secondary)
       }.padding(18)
     }.frame(maxWidth: .infinity, maxHeight: .infinity)
   }

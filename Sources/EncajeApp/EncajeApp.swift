@@ -221,7 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         showWelcome: { [weak self] in self?.showWelcome() })
       settingsWindow = makeWindow(
         title: localized("Encaje Settings", "Ajustes de Encaje"),
-        size: NSSize(width: 880, height: 660),
+        size: NSSize(width: 880, height: 690),
         view: view)
       settingsWindow?.identifier = NSUserInterfaceItemIdentifier("encaje.settings")
     }

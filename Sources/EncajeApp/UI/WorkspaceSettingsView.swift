@@ -30,7 +30,7 @@ struct WorkspaceSettingsView: View {
           Button(action: save) {
             Label(localized("Save current", "Guardar actual"), systemImage: "plus")
           }
-          .disabled(!canSave)
+          .disabled(!canSave).tint(canSave ? Color.teal : nil)
         }
         HStack {
           Text(localized("SAVED WORKSPACES", "ESPACIOS GUARDADOS"))
@@ -63,8 +63,8 @@ struct WorkspaceSettingsView: View {
                 .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            Button(localized("Restore", "Restaurar")) { model.restoreLayout(layout) }.disabled(
-              !granted)
+            Button(localized("Restore", "Restaurar")) { model.restoreLayout(layout) }
+              .disabled(!granted).tint(granted ? Color.teal : nil)
             Button(role: .destructive) {
               model.layouts.removeAll { $0.id == layout.id }
             } label: {
