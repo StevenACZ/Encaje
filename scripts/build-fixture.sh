@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 fixture_dir="$(mktemp -d /tmp/encaje-fixture.XXXXXX)"
 fixture="$fixture_dir/Encaje Performance Fixture.app"
 mkdir -p "$fixture/Contents/MacOS"
-swiftc -swift-version 6 scripts/fixtures/WindowFixture.swift -o "$fixture/Contents/MacOS/EncajeFixture"
+swiftc -swift-version 6 -target arm64-apple-macos14.0 scripts/fixtures/WindowFixture.swift -o "$fixture/Contents/MacOS/EncajeFixture"
 cat > "$fixture/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0"><dict>

@@ -19,9 +19,12 @@ propias zonas, asigna atajos y mueve ventanas entre monitores. No requiere cuent
 - Asignar atajos que combinen Command, Option, Control y Shift.
 - Deshacer y rehacer cambios de la cuadrícula, y comparar zonas con contornos de referencia.
 - Mover ventanas entre monitores vecinos repitiendo un atajo direccional.
+- Las ventanas se deslizan a su lugar en una quinta de segundo; puedes desactivarlo cuando
+  quieras y se mantiene apagado con Reducir movimiento.
 - Guardar espacios de trabajo y restaurar la posición de las ventanas abiertas que coincidan.
 - Pausar desde la barra de menús o excluir aplicaciones de los atajos.
-- Ajustar el espaciado y el inicio de sesión opcional, con una guía nativa de Accesibilidad.
+- Ajustar la separación entre ventanas (ninguna por defecto) y el inicio de sesión opcional,
+  con una guía nativa de Accesibilidad.
 - Cambiar al instante entre inglés, español y el idioma del sistema.
 - Recibir actualizaciones firmadas mediante Sparkle 2, con comprobaciones diarias
   opcionales y una acción explícita para instalar.

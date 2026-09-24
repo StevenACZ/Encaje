@@ -2,6 +2,14 @@ import AppKit
 
 @MainActor final class FixtureDelegate: NSObject, NSApplicationDelegate {
   var window: NSWindow?
+  var frames: FileHandle?
+  @objc func frameChanged(_ notification: Notification) {
+    guard let frame = window?.frame else { return }
+    let line = String(
+      format: "%.4f %.1f %.1f %.1f %.1f\n", ProcessInfo.processInfo.systemUptime,
+      frame.minX, frame.minY, frame.width, frame.height)
+    frames?.write(Data(line.utf8))
+  }
   func applicationDidFinishLaunching(_ notification: Notification) {
     let window = NSWindow(contentRect: NSRect(x: 160, y: 160, width: 720, height: 460),
                           styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
@@ -16,6 +24,15 @@ import AppKit
     window.isReleasedWhenClosed = false
     window.makeKeyAndOrderFront(nil)
     self.window = window
+    if let path = ProcessInfo.processInfo.environment["ENCAJE_FIXTURE_FRAMES_FILE"],
+      FileManager.default.createFile(atPath: path, contents: nil)
+    {
+      frames = FileHandle(forWritingAtPath: path)
+      for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+        NotificationCenter.default.addObserver(
+          self, selector: #selector(frameChanged), name: name, object: window)
+      }
+    }
     NSApplication.shared.activate(ignoringOtherApps: true)
   }
 }

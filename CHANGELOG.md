@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-23
+
+### Added
+
+- Windows glide into place when you use a shortcut, undo or restore, in about a fifth of a second. Turn it off with "Animate windows" in Preferences; it also stays off while Reduce Motion is on. Moves to another display stay instant.
+
+### Changed
+
+- Window spacing now starts at 0 pt, so windows sit edge to edge unless you choose a spacing in Preferences. A spacing you already set is kept.
+- Preferences icons share one column and the spacing slider sits next to its label.
+
+### Fixed
+
+- A window that its app keeps taller or wider than a bottom zone is moved back inside the screen instead of ending partly below it.
+- Warnings after a shortcut, such as "This application limits its window size or position", now disappear on their own after a few seconds.
+
 ## [1.1.3] - 2026-09-18
 
 ### Fixed

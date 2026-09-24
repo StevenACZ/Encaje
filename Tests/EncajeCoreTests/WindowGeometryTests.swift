@@ -21,6 +21,15 @@ final class WindowGeometryTests: XCTestCase {
     XCTAssertEqual(
       WindowGeometry.target(for: .left, window: frame, displays: screens, gap: 0), frame)
   }
+  func testClampedBottomZoneWindowIsLiftedBackOnScreen() throws {
+    let usable = DisplayArea(id: "usable", frame: CGRect(x: 0, y: 0, width: 1440, height: 870))
+    let clamped = CGRect(x: 660, y: -63, width: 780, height: 316)
+    XCTAssertEqual(
+      WindowGeometry.recovered(clamped, displays: [usable]),
+      CGRect(x: 660, y: 0, width: 780, height: 316))
+    let fitting = CGRect(x: 660, y: 0, width: 780, height: 316)
+    XCTAssertEqual(WindowGeometry.recovered(fitting, displays: [usable]), fitting)
+  }
   func testVerticalDirectionsUseAppKitCoordinates() throws {
     let top = DisplayArea(id: "top", frame: CGRect(x: 100, y: 900, width: 800, height: 600))
     let bottom = DisplayArea(id: "bottom", frame: CGRect(x: 0, y: -900, width: 1200, height: 800))

@@ -48,11 +48,17 @@ import Foundation
     return (result, completed)
   }
 
+  static var enabled: Bool { destination != nil }
+
   static func finish() {
-    guard var completed = record, let destination else { return }
+    guard var completed = record else { return }
     record = nil
     completed.durationMS = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
-    guard var data = try? JSONEncoder().encode(completed) else { return }
+    write(completed)
+  }
+
+  static func write(_ completed: Record) {
+    guard let destination, var data = try? JSONEncoder().encode(completed) else { return }
     data.append(0x0A)
     let output = data
     writer.async {

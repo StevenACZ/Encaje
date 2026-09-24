@@ -80,14 +80,24 @@ struct PreferencesView: View {
             }.frame(maxWidth: .infinity)
             Divider()
             HStack {
+              Label(localized("Animate windows", "Animar ventanas"), systemImage: "sparkles")
+              Spacer()
+              Toggle(localized("Animate windows", "Animar ventanas"), isOn: $model.animatesWindows)
+                .labelsHidden().toggleStyle(.settingSwitch)
+            }.frame(maxWidth: .infinity)
+            Divider()
+            HStack(spacing: 12) {
               Label(localized("Window spacing", "Separación entre ventanas"), systemImage: "space")
               Spacer()
+              Slider(value: $model.gap, in: 0...32, step: 1)
+                .frame(width: 240)
+                .accessibilityLabel(localized("Window spacing", "Separación entre ventanas"))
               Text("\(Int(model.gap)) pt").font(.callout.monospacedDigit()).foregroundStyle(
-                .secondary)
+                .secondary
+              )
+              .frame(width: 38, alignment: .trailing)
             }
-            Slider(value: $model.gap, in: 0...32, step: 1)
-              .accessibilityLabel(localized("Window spacing", "Separación entre ventanas"))
-          }.padding(9)
+          }.padding(9).labelStyle(SettingLabelStyle())
         }
         VStack(alignment: .leading, spacing: 10) {
           HStack {
@@ -128,6 +138,15 @@ struct PreferencesView: View {
         )
         .font(.caption).foregroundStyle(.secondary)
       }.padding(.horizontal, 22).padding(.vertical, 14)
+    }
+  }
+}
+
+struct SettingLabelStyle: LabelStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    HStack(spacing: 7) {
+      configuration.icon.frame(width: 20)
+      configuration.title
     }
   }
 }
