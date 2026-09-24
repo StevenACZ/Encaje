@@ -19,9 +19,12 @@ zones, assign shortcuts, and move windows between displays. No account is requir
 - Assign shortcuts using Command, Option, Control and Shift combinations.
 - Undo and redo grid edits, and compare zones using selectable reference outlines.
 - Move windows between neighboring displays with repeated directional shortcuts.
+- Windows glide into place in about a fifth of a second; turn it off anytime, and it
+  stays off with Reduce Motion.
 - Save workspaces and restore the positions of matching open windows.
 - Pause from the menu bar or exclude individual apps from shortcuts.
-- Set spacing and optional launch at login, with native Accessibility setup.
+- Set window spacing (none by default) and optional launch at login, with native
+  Accessibility setup.
 - Switch instantly between English, Spanish and the system language.
 - Receive signed in-app updates through Sparkle 2, with optional daily checks and
   an explicit action to install.

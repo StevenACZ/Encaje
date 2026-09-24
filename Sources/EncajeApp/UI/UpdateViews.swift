@@ -8,7 +8,7 @@ struct UpdateSettingsView: View {
       VStack(alignment: .leading, spacing: 12) {
         HStack {
           Label(localized("Updates", "Actualizaciones"), systemImage: "arrow.down.circle")
-            .font(.headline)
+            .font(.headline).labelStyle(SettingLabelStyle())
           Spacer()
           Text(
             Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""

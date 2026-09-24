@@ -24,6 +24,12 @@ final class AppModel: ObservableObject {
   }
   var onLanguageChange: (() -> Void)?
   @Published var gap: Double { didSet { defaults.set(gap, forKey: "gap") } }
+  @Published var animatesWindows: Bool {
+    didSet {
+      defaults.set(animatesWindows, forKey: "animatesWindows")
+      engine.animates = animatesWindows
+    }
+  }
   @Published var exclusions: String {
     didSet {
       defaults.set(exclusions, forKey: "exclusions")
@@ -55,12 +61,14 @@ final class AppModel: ObservableObject {
     defaults = suite.flatMap(UserDefaults.init(suiteName:)) ?? .standard
     language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
     permissions = PermissionCoordinator(defaults: defaults)
-    gap = defaults.object(forKey: "gap") as? Double ?? 8
+    gap = defaults.object(forKey: "gap") as? Double ?? 0
+    animatesWindows = defaults.object(forKey: "animatesWindows") as? Bool ?? true
     exclusions = defaults.string(forKey: "exclusions") ?? ""
     rules =
       Self.decode([WindowRule].self, defaults: defaults, key: "rulesV2")
       ?? WindowRule.migrating(Self.decode([String: Int].self, defaults: defaults, key: "bindings"))
     layouts = Self.decode([SavedLayout].self, defaults: defaults, key: "layouts") ?? []
+    engine.animates = animatesWindows
     permissions.$granted.removeDuplicates().sink { [weak self] granted in
       Task { @MainActor in self?.permissionChanged(granted) }
     }.store(in: &observers)

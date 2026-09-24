@@ -89,22 +89,63 @@ import EncajeCore
     return Snapshot(frame: frame)
   }
   static func apply(_ target: CGRect, to window: AXUIElement, current: CGRect) -> Applied {
-    var size = target.size
-    var point = CGPoint(x: target.minX, y: originHeight - target.maxY)
-    guard let s = AXValueCreate(.cgSize, &size), let p = AXValueCreate(.cgPoint, &point) else {
-      return Applied(succeeded: false, actual: nil)
-    }
+    guard let values = values(target) else { return Applied(succeeded: false, actual: nil) }
     let plan = WindowMovePlan(current: current, target: target)
     guard plan.resize || plan.reposition else { return Applied(succeeded: true, actual: current) }
-    var success = true
-    if plan.resize { success = write(window, name: kAXSizeAttribute, value: s) }
-    if plan.reposition { success = write(window, name: kAXPositionAttribute, value: p) && success }
+    var success = place(values, on: window, plan: plan)
     var actual = frame(window)
     if plan.shouldRetrySize(target: target, observed: actual) {
-      success = write(window, name: kAXSizeAttribute, value: s) && success
+      success = write(window, name: kAXSizeAttribute, value: values.size) && success
       actual = frame(window)
     }
     return Applied(succeeded: success, actual: actual)
+  }
+  static func place(
+    _ target: CGRect, on window: AXUIElement, from current: CGRect, resizeFirst: Bool
+  ) -> Bool {
+    guard let values = values(target) else { return false }
+    return place(
+      values, on: window, plan: WindowMovePlan(current: current, target: target),
+      resizeFirst: resizeFirst)
+  }
+  private static func place(
+    _ values: (size: AXValue, point: AXValue), on window: AXUIElement, plan: WindowMovePlan,
+    resizeFirst: Bool = true
+  ) -> Bool {
+    var success = true
+    if plan.resize && resizeFirst {
+      success = write(window, name: kAXSizeAttribute, value: values.size)
+    }
+    if plan.reposition {
+      success = write(window, name: kAXPositionAttribute, value: values.point) && success
+    }
+    if plan.resize && !resizeFirst {
+      success = write(window, name: kAXSizeAttribute, value: values.size) && success
+    }
+    return success
+  }
+  static func suspendEnhancedUserInterface(of window: AXUIElement) -> AXUIElement? {
+    var pid: pid_t = 0
+    guard AXUIElementGetPid(window, &pid) == .success else { return nil }
+    let app = AXUIElementCreateApplication(pid)
+    AXUIElementSetMessagingTimeout(app, 0.3)
+    guard attribute(app, enhancedUserInterface) as? Bool == true,
+      AXUIElementSetAttributeValue(app, enhancedUserInterface as CFString, kCFBooleanFalse)
+        == .success
+    else { return nil }
+    return app
+  }
+  static func resumeEnhancedUserInterface(of app: AXUIElement) {
+    AXUIElementSetAttributeValue(app, enhancedUserInterface as CFString, kCFBooleanTrue)
+  }
+  private static let enhancedUserInterface = "AXEnhancedUserInterface"
+  private static func values(_ target: CGRect) -> (size: AXValue, point: AXValue)? {
+    var size = target.size
+    var point = CGPoint(x: target.minX, y: originHeight - target.maxY)
+    guard let s = AXValueCreate(.cgSize, &size), let p = AXValueCreate(.cgPoint, &point) else {
+      return nil
+    }
+    return (s, p)
   }
   private static func write(_ window: AXUIElement, name: String, value: CFTypeRef) -> Bool {
     WindowPerformanceMetrics.measure(name == kAXSizeAttribute ? "writeSize" : "writePosition") {

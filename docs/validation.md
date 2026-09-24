@@ -34,6 +34,15 @@ alone does not establish the intended window size. AppKit may clip an initial
 resize by its previous position even on the same display; the engine conditionally
 retries when the observed size proves that correction is needed.
 
+## Window animation
+
+Launch the fixture with `ENCAJE_FIXTURE_FRAMES_FILE=<path>` and it appends every frame
+change it applies (`<uptime> <x> <y> <w> <h>`, Cocoa coordinates). With
+`ENCAJE_MOVEMENT_METRICS_FILE`, Encaje writes one `animate` record per animation: AX steps,
+whether it ran to the end, total and slowest step time. An animation must end on the exact
+frame of the instant move, a new command must land the running one first, and idle CPU
+must return to 0.0% once it ends. A step slower than 40 ms lands the window at once.
+
 ## Interactive checks
 
 - Record Command+W without closing Settings; record Control+Option+key; cancel and
