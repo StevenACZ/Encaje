@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-09-25
+
+### Fixed
+
+- On a Mac where Encaje is already set up, launching it no longer flashes the setup window and the welcome for a few seconds.
+
 ## [1.3.0] - 2026-09-25
 
 ### Changed
