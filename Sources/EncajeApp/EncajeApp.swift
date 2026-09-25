@@ -76,6 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     NSWorkspace.shared.notificationCenter.addObserver(
       self, selector: #selector(workspaceActivated),
       name: NSWorkspace.didActivateApplicationNotification, object: nil)
+    model.refresh()
     permissionFlow.presentIfNeeded()
     if ProcessInfo.processInfo.environment["ENCAJE_SHOW_SETTINGS"] == "1" { showSettings() }
     if ProcessInfo.processInfo.environment["ENCAJE_SHOW_POPOVER"] == "1" { toggleMenuPopover() }
