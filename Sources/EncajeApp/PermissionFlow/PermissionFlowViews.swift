@@ -62,7 +62,12 @@ public struct PermissionFlowChecklist: View {
         }
       }
     }
-    .onAppear { appeared = true }
+    .onAppear {
+      appeared = true
+      model.refresh()
+      model.startMonitoring()
+    }
+    .onDisappear { model.stopMonitoring() }
     .animation(
       reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.85),
       value: model.relaunchPending)

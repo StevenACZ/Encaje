@@ -109,7 +109,7 @@ public final class PermissionFlowModel: NSObject, ObservableObject {
     }
     if PermissionFlowProbe.request(
       kind, automationTarget: configuration.automationTarget,
-      completion: { [weak self] in self?.afterSystemPrompt(kind, from: sourceFrame) })
+      completion: { [weak self] in self?.afterSystemPrompt() })
     {
       return
     }
@@ -151,7 +151,7 @@ public final class PermissionFlowModel: NSObject, ObservableObject {
     refreshTimer?.invalidate()
     refreshTimer = nil
     NSWorkspace.shared.notificationCenter.removeObserver(self)
-    dismissGuide()
+    if guideDismissTimer == nil { dismissGuide() }
   }
 
   public func relaunch() {
@@ -184,9 +184,9 @@ public final class PermissionFlowModel: NSObject, ObservableObject {
     configuration.defaults.set(requested.map(\.rawValue).sorted(), forKey: Self.requestedKey)
   }
 
-  private func afterSystemPrompt(_ kind: PermissionFlowKind, from sourceFrame: CGRect?) {
+  private func afterSystemPrompt() {
     refresh()
-    if status(kind) == .denied { openSettings(kind, from: sourceFrame) }
+    NSApp.activate()
   }
 
   private func handleGranted(_ kind: PermissionFlowKind) {

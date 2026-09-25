@@ -72,7 +72,7 @@ final class PermissionFlowWindowController: NSObject, NSWindowDelegate {
     window.standardWindowButton(.zoomButton)?.isHidden = true
     window.collectionBehavior = [.moveToActiveSpace, .fullScreenNone]
     window.delegate = self
-    let container = NSView(frame: CGRect(origin: .zero, size: size))
+    let container = PermissionFlowBackdrop(frame: CGRect(origin: .zero, size: size))
     let hosting = NSHostingView(
       rootView: PermissionFlowScreen(
         model: model, height: height,
@@ -137,8 +137,20 @@ final class PermissionFlowWindowController: NSObject, NSWindowDelegate {
     model.stopMonitoring()
     window?.delegate = nil
     window = nil
-    let completed = completed || (model.ready && model.isCompleted)
+    if !completed && model.ready {
+      completed = true
+      model.markCompleted()
+    }
     onClose?(completed)
+  }
+}
+
+final class PermissionFlowBackdrop: NSView {
+  override var isOpaque: Bool { true }
+
+  override func draw(_ dirtyRect: NSRect) {
+    NSColor.windowBackgroundColor.setFill()
+    dirtyRect.fill()
   }
 }
 
