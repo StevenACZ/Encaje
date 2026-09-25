@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- First launch asks for Accessibility in one setup window with a short reason. Open Settings shows a guide inside System Settings that follows its window and lets you drag Encaje's icon into the list; once access is on, a short welcome plays and closes by itself. Macs where Encaje is already set up skip it.
+
 ## [1.2.0] - 2026-09-23
 
 ### Added
