@@ -60,7 +60,7 @@ final class AppModel: ObservableObject {
     let suite = ProcessInfo.processInfo.environment["ENCAJE_DEFAULTS_SUITE"]
     defaults = suite.flatMap(UserDefaults.init(suiteName:)) ?? .standard
     language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
-    permissions = PermissionCoordinator(defaults: defaults)
+    permissions = PermissionCoordinator()
     gap = defaults.object(forKey: "gap") as? Double ?? 0
     animatesWindows = defaults.object(forKey: "animatesWindows") as? Bool ?? true
     exclusions = defaults.string(forKey: "exclusions") ?? ""
@@ -79,15 +79,6 @@ final class AppModel: ObservableObject {
     applyHotkeys()
   }
 
-  var welcomeComplete: Bool {
-    get { defaults.bool(forKey: "welcomeComplete") }
-    set {
-      defaults.set(newValue, forKey: "welcomeComplete")
-      if newValue { defaults.removeObject(forKey: "permissionSetupPending") }
-    }
-  }
-
-  var setupPending: Bool { defaults.bool(forKey: "permissionSetupPending") }
   var ready: Bool { permissions.granted && shortcutReady }
 
   func refresh() {
@@ -225,7 +216,6 @@ final class AppModel: ObservableObject {
 
   func stop() {
     hotkeys.stop()
-    permissions.dismiss()
   }
 
   func refreshLoginState() {

@@ -49,13 +49,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   private var model: AppModel!
   private var statusItem: NSStatusItem!
   private var settingsWindow: NSWindow?
-  private var welcomeWindow: NSWindow?
+  private var permissionFlow: PermissionFlow!
   private var refreshTimer: Timer?
   private let menuPopover = MenuBarPopover()
   private let aboutWindow = AboutWindowController()
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     model = AppModel()
+    permissionFlow = makePermissionFlow()
     UpdateManager.shared.start()
     configureApplicationMenu()
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -69,16 +70,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
       self.configureApplicationMenu()
       self.rebuildMenu()
       self.settingsWindow?.title = localized("Encaje Settings", "Ajustes de Encaje")
-      self.welcomeWindow?.title = localized("Welcome to Encaje", "Bienvenido a Encaje")
     }
     model.onMenuChange = { [weak self] in self?.rebuildMenu() }
     rebuildMenu()
     NSWorkspace.shared.notificationCenter.addObserver(
       self, selector: #selector(workspaceActivated),
       name: NSWorkspace.didActivateApplicationNotification, object: nil)
-    if !model.welcomeComplete || !model.permissions.granted || model.setupPending {
-      showWelcome()
-    }
+    permissionFlow.presentIfNeeded()
     if ProcessInfo.processInfo.environment["ENCAJE_SHOW_SETTINGS"] == "1" { showSettings() }
     if ProcessInfo.processInfo.environment["ENCAJE_SHOW_POPOVER"] == "1" { toggleMenuPopover() }
   }
@@ -231,21 +229,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
   @objc private func showWelcome() {
     menuPopover.close(restoreFocus: false)
     model.refresh()
-    if welcomeWindow == nil {
-      let view = WelcomeView(
-        model: model, permissions: model.permissions,
-        sourceFrame: { [weak self] in self?.welcomeWindow?.frame },
-        finish: { [weak self] in
-          self?.model.permissions.dismiss()
-          self?.welcomeWindow?.close()
-        })
-      welcomeWindow = makeWindow(
-        title: localized("Welcome to Encaje", "Bienvenido a Encaje"),
-        size: NSSize(width: 510, height: 590),
-        view: view)
-      welcomeWindow?.identifier = NSUserInterfaceItemIdentifier("encaje.welcome")
-    }
-    present(welcomeWindow)
+    permissionFlow.present()
+  }
+
+  private func makePermissionFlow() -> PermissionFlow {
+    let flow = PermissionFlow(
+      configuration: PermissionFlowConfiguration(
+        appName: "Encaje",
+        icon: AppArtwork.icon,
+        accent: .teal,
+        items: [
+          PermissionFlowItem(
+            .accessibility,
+            reason: PermissionFlowText(
+              "Move and resize the windows of your other apps.",
+              "Mover y redimensionar las ventanas de tus otras apps."))
+        ],
+        defaults: AppLanguage.defaults,
+        language: { localized("en", "es") == "es" ? .spanish : .english },
+        tagline: PermissionFlowText(
+          "Everything fits. Press Shift + S to maximize the current window.",
+          "Todo encaja. Pulsa Shift + S para maximizar la ventana actual."),
+        welcomeDuration: 4.5,
+        legacyCompletionKeys: ["welcomeComplete"],
+        note: PermissionFlowText(
+          "Encaje's shortcuts replace their uppercase letters. Pause or customize them from the menu bar.",
+          "Los atajos de Encaje reemplazan sus letras mayúsculas. Páusalos o cámbialos desde la barra de menú."
+        ),
+        isReady: { [weak self] in self?.model.ready ?? false },
+        pendingRelaunch: { [weak self] in
+          guard let model = self?.model else { return false }
+          return model.permissions.restartSuggested && !model.shortcutReady
+        },
+        menuBarAnchor: { [weak self] in
+          guard let button = self?.statusItem?.button, let window = button.window else {
+            return nil
+          }
+          return window.convertToScreen(button.convert(button.bounds, to: nil))
+        }))
+    flow.model.onGranted = { [weak self] _ in self?.model.refresh() }
+    return flow
   }
 
   private func makeWindow<V: View>(title: String, size: NSSize, view: V) -> NSWindow {
@@ -280,12 +303,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
   func windowWillClose(_ notification: Notification) {
     guard let closed = notification.object as? NSWindow else { return }
-    if closed === welcomeWindow {
-      model.permissions.dismiss()
-      welcomeWindow = nil
-    }
     if closed === settingsWindow { settingsWindow = nil }
-    if welcomeWindow == nil && settingsWindow == nil {
+    if settingsWindow == nil {
       refreshTimer?.invalidate()
       refreshTimer = nil
     }

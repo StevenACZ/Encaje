@@ -6,7 +6,7 @@ final class PermissionPlacementTests: XCTestCase {
   func testGuideFillsRightColumnInsideSettings() throws {
     let settings = CGRect(x: 100, y: 100, width: 724, height: 1000)
     let frame = try XCTUnwrap(
-      PermissionPlacement.frame(
+      PermissionFlowPlacement.frame(
         settings: settings, visible: CGRect(x: 0, y: 0, width: 1440, height: 1200)))
     XCTAssertTrue(settings.contains(frame))
     XCTAssertEqual(frame.minY, 120)
@@ -19,13 +19,13 @@ final class PermissionPlacementTests: XCTestCase {
   func testGuideHidesWhenInsufficientVisibleContentAndRecovers() {
     let screen = CGRect(x: 0, y: 0, width: 1000, height: 900)
     XCTAssertNil(
-      PermissionPlacement.frame(
+      PermissionFlowPlacement.frame(
         settings: CGRect(x: 700, y: 100, width: 724, height: 800), visible: screen))
     XCTAssertNotNil(
-      PermissionPlacement.frame(
+      PermissionFlowPlacement.frame(
         settings: CGRect(x: 100, y: 100, width: 724, height: 800), visible: screen))
     XCTAssertNil(
-      PermissionPlacement.frame(
+      PermissionFlowPlacement.frame(
         settings: CGRect(x: 100, y: 800, width: 724, height: 800), visible: screen))
   }
 }
