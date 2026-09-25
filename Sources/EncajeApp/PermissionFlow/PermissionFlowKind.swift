@@ -138,7 +138,7 @@ public struct PermissionFlowConfiguration {
   @MainActor
   public init(
     appName: String,
-    icon: NSImage = NSApplication.shared.applicationIconImage,
+    icon: NSImage? = nil,
     accent: Color = .accentColor,
     items: [PermissionFlowItem],
     defaults: UserDefaults = .standard,
@@ -153,7 +153,7 @@ public struct PermissionFlowConfiguration {
     menuBarAnchor: (@MainActor () -> CGRect?)? = nil
   ) {
     self.appName = appName
-    self.icon = icon
+    self.icon = icon ?? NSApplication.shared.applicationIconImage
     self.accent = accent
     self.items = items.sorted { $0.kind.order < $1.kind.order }
     self.defaults = defaults

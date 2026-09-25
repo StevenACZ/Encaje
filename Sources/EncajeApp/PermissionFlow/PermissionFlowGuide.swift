@@ -1,5 +1,6 @@
 // Vendored from PermissionFlow; edit the canonical package and re-vendor.
 import AppKit
+import Combine
 import QuartzCore
 import SwiftUI
 
