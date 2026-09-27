@@ -10,7 +10,7 @@ swift test
 swift build -c release --product Encaje
 ```
 
-These checks need no signing credentials. CI runs them for pull requests.
+These checks need no signing credentials. Run them before every pull request.
 
 ## Build and install
 
