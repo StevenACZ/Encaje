@@ -15,6 +15,7 @@ Public macOS window manager. Swift 6, SwiftPM, macOS 14+, Apple Silicon.
 - Preserve user window state for undo; handle constrained windows honestly.
 - No generated explanatory comments. Only document essential constraints.
 - Full gate: make check (Swift format lint, swift test, signed Release bundle).
+- Verification is local only: there is no hosted CI. Do not add GitHub Actions workflows.
 - Do not test the build bundle while rebuilding it; use the installed copy.
 - Permission guide stays inside Settings content with pixel-aligned geometry.
 - Keep generated artifacts, signing identities and private data out of Git.
