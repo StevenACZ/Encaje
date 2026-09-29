@@ -10,6 +10,7 @@ Public macOS window manager. Swift 6, SwiftPM, macOS 14+, Apple Silicon.
 - Local installations must be Apple Development signed with a stable bundle ID.
 - Default Shift hotkeys: Q/W/E, A/S/D, Z/X/C form the spatial grid.
 - Matching hotkeys consume uppercase letters; explain this and offer pause/exclusions.
+- The hotkey tap stays at HID level: a session tap runs after other apps' head session taps (remote screen viewers), which swallow the keys first.
 - No continuous animations while idle. Permission tracking runs only when visible.
 - Before permission grant, the guide cannot rely on trusted Accessibility APIs.
 - Preserve user window state for undo; handle constrained windows honestly.
