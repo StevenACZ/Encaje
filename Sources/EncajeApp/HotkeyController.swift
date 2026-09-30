@@ -25,7 +25,7 @@ import EncajeCore
     }
     guard
       let port = CGEvent.tapCreate(
-        tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
+        tap: .cghidEventTap, place: .headInsertEventTap, options: .defaultTap,
         eventsOfInterest: CGEventMask(mask), callback: callback,
         userInfo: Unmanaged.passUnretained(self).toOpaque())
     else { return false }

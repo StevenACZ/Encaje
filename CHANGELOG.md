@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Shortcuts now reach Encaje even when the focused window belongs to an app that captures the whole keyboard, such as a remote screen viewer; they used to go to that app instead.
+
 ## [1.3.1] - 2026-09-25
 
 ### Fixed
